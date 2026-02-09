@@ -18,7 +18,7 @@ int main()
     {
         choice angle = 2.0 * pi * i / (N - 1);
         choice v = std::sin(angle);
-        sinVal[i] = static_cast<choice>(v);
+        sinVal[i] = v;
         sum += sinVal[i];
     }
 
