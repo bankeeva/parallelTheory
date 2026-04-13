@@ -8,17 +8,9 @@
 #include <iomanip>
 #include <functional>
 #include <cmath>
-#include <chrono>
 
 #include "server.h"
 #include "client.h"
-
-double wtime()
-{
-    return std::chrono::duration<double>(
-               std::chrono::high_resolution_clock::now().time_since_epoch())
-        .count();
-}
 
 template <typename T>
 T fun_sqrt(T arg)
@@ -111,10 +103,9 @@ void test(int N, std::string filename, std::ofstream &test_file)
 int main()
 {
     int N1 = 9000, N2 = 9000, N3 = 9000;
+    int num_threads = 1;
+
     std::mutex mut;
-    std::vector<int> num_threads = {1, 2, 4, 7, 8, 16, 20, 40};
-    double time_first = 0.0;
-    int repit = 250;
 
     std::ofstream test_file("test_results.txt");
     if (!test_file.is_open())
@@ -161,55 +152,33 @@ int main()
         args3[i] = oss.str();
     }
 
-    for (int nt : num_threads)
+    std::ofstream file("results.txt");
+    if (!file.is_open())
     {
-        double whole_time = 0.0;
-
-        for (int i = 0; i < repit; i++)
-        {
-            std::ofstream file("results.txt");
-            if (!file.is_open())
-            {
-                std::cerr << "Не удалось открыть файл\n";
-                return 1;
-            }
-            file << "Function name | ID | Result | Arguments" << std::endl;
-
-            Server<> server(nt);
-            server.start();
-
-            Client<> client1(N1, tasks1, server, mut, file, "fun_sqrt", args1);
-            Client<> client2(N2, tasks2, server, mut, file, "fun_sin", args2);
-            Client<> client3(N3, tasks3, server, mut, file, "fun_pow", args3);
-
-            double serial_time = wtime();
-
-            client1.start();
-            client2.start();
-            client3.start();
-
-            client1.wait();
-            client2.wait();
-            client3.wait();
-
-            serial_time = wtime() - serial_time;
-            whole_time += serial_time;
-
-            server.stop();
-            file.close();
-
-            test_file << nt << " threads: ";
-            test(N1 + N2 + N3, "results.txt", test_file);
-        }
-        whole_time /= repit;
-        if (nt == 1)
-        {
-            time_first = whole_time;
-            std::cout << "Потоков: " << nt << " Время(c): " << whole_time << std::endl;
-        }
-        else
-            std::cout << "Потоков: " << nt << " Время(c): " << whole_time << " Ускорение: " << time_first / whole_time << std::endl;
+        std::cerr << "Не удалось открыть файл\n";
+        return 1;
     }
+    file << "Function name | ID | Result | Arguments" << std::endl;
+
+    Server<> server(num_threads);
+    server.start();
+
+    Client<> client1(N1, tasks1, server, mut, file, "fun_sqrt", args1);
+    Client<> client2(N2, tasks2, server, mut, file, "fun_sin", args2);
+    Client<> client3(N3, tasks3, server, mut, file, "fun_pow", args3);
+
+    client1.start();
+    client2.start();
+    client3.start();
+
+    client1.wait();
+    client2.wait();
+    client3.wait();
+
+    server.stop();
+    file.close();
+
+    test(N1 + N2 + N3, "results.txt", test_file);
 
     test_file.close();
 
