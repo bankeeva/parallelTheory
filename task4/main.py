@@ -99,11 +99,12 @@ class SensorCam(Sensor):
 
         if not ret:
             logging.error(f"Не удалось получить кадр")
+            stop_event.set()
             raise RuntimeError(f"Не удалось получить кадр")
 
         return frame
             
-    def __del__(self):
+    def stop(self):
         self.camera.release()
         logging.info("Камера освобождена")
 
@@ -125,7 +126,7 @@ class WindowImage():
             logging.error(f"Не удалось отобразить изображение: {e}")
             raise RuntimeError(f"Не удалось отобразить изображение: {e}")
 
-    def __del__(self):
+    def stop(self):
         cv2.destroyAllWindows()
         logging.info("Окно закрыто")
 
@@ -136,16 +137,16 @@ def worker(sensor, q, stop_event):
             data = sensor.get()
         except Exception as e:
             print(e)
+            stop_event.set()
+            break
 
-        if data is None:
-            continue
-
-        try:
-            q.get_nowait()
-        except Empty:
-            pass
-        
-        q.put(data)
+        if data is  not None:
+            try:
+                q.get_nowait()
+            except Empty:
+                pass
+            
+            q.put(data)
 
 try:
     camera_sensor = SensorCam(args.camera, args.resolution)
@@ -201,6 +202,9 @@ for thread in threads:
 
 try:
     while True:
+        if stop_event.is_set():
+            break
+
         try:
             while True:
                 cam_frame = cam_queue.get_nowait()
@@ -232,7 +236,10 @@ try:
             cv2.putText(img, f"Sensor10: {frame_10}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.putText(img, f"Sensor1: {frame_1}", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            key = window.show(img)
+            try:
+                key = window.show(img)
+            except Exception:
+                break
 
             if key == ord('q'):
                 logging.info("Нажата клавиша q")
@@ -244,5 +251,5 @@ finally:
         thread.join()
         logging.info(f"Поток {thread.name} остановился")
 
-    del camera_sensor
-    del window
+    camera_sensor.stop()
+    window.stop()
