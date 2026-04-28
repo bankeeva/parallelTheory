@@ -4,6 +4,7 @@ import logging
 from queue import Queue, Empty
 import time
 import os
+import sys
 
 import cv2
 
@@ -143,13 +144,21 @@ def worker(sensor, q, stop_event):
         
         q.put(data)
 
-camera_sensor = SensorCam(args.camera, args.resolution)
+try:
+    camera_sensor = SensorCam(args.camera, args.resolution)
+except Exception as e:
+    print(e)
+    sys.exit(1)
 
 sensor_100 = SensorX(1 / 100)
 sensor_10 = SensorX(1 / 10)
 sensor_1 = SensorX(1 / 1)
 
-window = WindowImage(args.fps)
+try:
+    window = WindowImage(args.fps)
+except Exception as e:
+    print(e)
+    sys.exit(1)
 
 cam_queue = Queue(maxsize=1)
 q100 = Queue(maxsize=1)
@@ -220,7 +229,11 @@ try:
             cv2.putText(img, f"Sensor10: {frame_10}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.putText(img, f"Sensor1: {frame_1}", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            key = window.show(img)
+            try:
+                key = window.show(img)
+            except Exception as e:
+                print(e)
+
             if key == ord('q'):
                 logging.info("Нажата клавиша q")
                 break
