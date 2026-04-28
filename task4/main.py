@@ -99,8 +99,8 @@ class SensorCam(Sensor):
 
         if not ret:
             logging.error(f"Не удалось получить кадр")
-            return None
-    
+            raise RuntimeError(f"Не удалось получить кадр")
+
         return frame
             
     def __del__(self):
@@ -132,7 +132,10 @@ class WindowImage():
 
 def worker(sensor, q, stop_event):
     while not stop_event.is_set():
-        data = sensor.get()
+        try:
+            data = sensor.get()
+        except Exception as e:
+            print(e)
 
         if data is None:
             continue
@@ -229,10 +232,7 @@ try:
             cv2.putText(img, f"Sensor10: {frame_10}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.putText(img, f"Sensor1: {frame_1}", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            try:
-                key = window.show(img)
-            except Exception as e:
-                print(e)
+            key = window.show(img)
 
             if key == ord('q'):
                 logging.info("Нажата клавиша q")
