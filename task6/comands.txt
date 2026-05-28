@@ -1,0 +1,48 @@
+pgc++ -acc -Minfo=all -fast -o main_cpu task6/main.cpp -lboost_program_options
+pgc++ -acc -acc=multicore -Minfo=all -fast -o main_multicore task6/main.cpp -lboost_program_options
+pgc++ -acc -acc=gpu -Minfo=all -fast -o main_gpu task6/main.cpp -lboost_program_options
+
+-----------------
+
+./main_gpu --size 10
+./main_gpu --size 13
+
+-----------------
+
+ACC_NUM_CORES=2 ./main_multicore --size 512 --tol 1e-6 --maxiter 1000000
+ACC_NUM_CORES=6 ./main_multicore --size 512 --tol 1e-6 --maxiter 1000000
+ACC_NUM_CORES=8 ./main_multicore --size 512 --tol 1e-6 --maxiter 1000000
+ACC_NUM_CORES=16 ./main_multicore --size 512 --tol 1e-6 --maxiter 1000000
+ACC_NUM_CORES=32 ./main_multicore --size 512 --tol 1e-6 --maxiter 1000000
+ACC_NUM_CORES=64 ./main_multicore --size 512 --tol 1e-6 --maxiter 1000000
+
+-----------------
+
+./main_cpu --size 128 --tol 1e-6 --maxiter 1000000
+./main_multicore --size 128 --tol 1e-6 --maxiter 1000000
+ACC_NUM_CORES=16 ./main_multicore --size 128 --tol 1e-6 --maxiter 1000000
+
+./main_cpu --size 256 --tol 1e-6 --maxiter 1000000
+./main_multicore --size 256 --tol 1e-6 --maxiter 1000000
+ACC_NUM_CORES=16 ./main_multicore --size 256 --tol 1e-6 --maxiter 1000000
+
+./main_cpu --size 512 --tol 1e-6 --maxiter 1000000
+./main_multicore --size 512 --tol 1e-6 --maxiter 1000000
+ACC_NUM_CORES=16 ./main_multicore --size 512 --tol 1e-6 --maxiter 1000000
+
+./main_cpu --size 1024 --tol 1e-6 --maxiter 1000000
+./main_multicore --size 1024 --tol 1e-6 --maxiter 1000000
+ACC_NUM_CORES=16 ./main_multicore --size 1024 --tol 1e-6 --maxiter 1000000
+-----------------
+
+pgc++ -acc -acc=gpu -Minfo=all -fast -o main1_gpu task6/main1.cpp -lboost_program_options
+
+CUDA_VISIBLE_DEVICES=2
+
+./main1_gpu --size 128 --tol 1e-6 --maxiter 1000000
+./main1_gpu --size 256 --tol 1e-6 --maxiter 1000000
+./main1_gpu --size 512 --tol 1e-6 --maxiter 1000000
+./main1_gpu --size 1024 --tol 1e-6 --maxiter 1000000
+
+nsys profile --trace=cuda,openacc --stats=true -f true \
+    ./main1_gpu --size 512 --tol 1e-6 --maxiter 80 > task6/pr/report_stage_new
